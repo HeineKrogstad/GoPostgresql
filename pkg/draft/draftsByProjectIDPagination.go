@@ -1,12 +1,15 @@
-package database
+package draft
 
 import (
 	"GoPostgresql/models"
+	"GoPostgresql/pkg/database"
 	"context"
+	"fmt"
 )
 
-func GetDraftsByProjectID(ctx context.Context, projectID int) ([]models.Draft, error) {
-	rows, err := conn.Query(ctx, "SELECT * FROM draft WHERE id_project=$1", projectID)
+func GetDraftsByProjectIDPagination(ctx context.Context, projectID, limit, offset int) ([]models.Draft, error) {
+	query := fmt.Sprintf("SELECT * FROM draft WHERE id_project=$1 LIMIT %d OFFSET %d", limit, offset)
+	rows, err := database.Conn.Query(ctx, query, projectID)
 	if err != nil {
 		return nil, err
 	}

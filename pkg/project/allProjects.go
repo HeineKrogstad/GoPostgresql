@@ -1,12 +1,13 @@
-package database
+package project
 
 import (
 	"GoPostgresql/models"
+	"GoPostgresql/pkg/database"
 	"context"
 )
 
 func GetProjects() ([]models.Project, error) {
-	rows, err := conn.Query(context.Background(), "SELECT * FROM project")
+	rows, err := database.Conn.Query(context.Background(), "SELECT * FROM project")
 	if err != nil {
 		return nil, err
 	}

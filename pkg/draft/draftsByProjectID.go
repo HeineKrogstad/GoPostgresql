@@ -1,13 +1,14 @@
-package database
+package draft
 
 import (
 	"GoPostgresql/models"
+	"GoPostgresql/pkg/database"
+
 	"context"
 )
 
-// GetDrafts retrieves all drafts from the database
-func GetDrafts() ([]models.Draft, error) {
-	rows, err := conn.Query(context.Background(), "SELECT * FROM draft")
+func GetDraftsByProjectID(ctx context.Context, projectID int) ([]models.Draft, error) {
+	rows, err := database.Conn.Query(ctx, "SELECT * FROM draft WHERE id_project=$1", projectID)
 	if err != nil {
 		return nil, err
 	}
