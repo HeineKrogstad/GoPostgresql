@@ -89,5 +89,20 @@ func main() {
 		return c.JSON(nodes)
 	})
 
+	app.Get("/nodes/:nodeId/draft", func(c *fiber.Ctx) error {
+		nodeId, err := c.ParamsInt("nodeId")
+		if err != nil {
+			return c.Status(400).SendString("Invalid nodeId")
+		}
+
+		ctx := context.Background()
+		draft, err := draft.GetDraftByNodeID(ctx, nodeId)
+		if err != nil {
+			return c.Status(500).SendString(err.Error())
+		}
+
+		return c.JSON(draft)
+	})
+
 	log.Fatal(app.Listen(":3000"))
 }
