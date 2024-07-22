@@ -1,6 +1,7 @@
 package main
 
 import (
+	"GoPostgresql/models"
 	"GoPostgresql/pkg/attachment"
 	"GoPostgresql/pkg/database"
 	"GoPostgresql/pkg/draft"
@@ -11,6 +12,7 @@ import (
 	"context"
 	"log"
 	"strconv"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -135,5 +137,49 @@ func main() {
 		return c.JSON(attachments)
 	})
 
+	app.Post("/draft", createDraftHandler)
+
+	app.Delete("/draft/:draftId", deleteDraftHandler)
+
 	log.Fatal(app.Listen(":3000"))
+}
+
+func createDraftHandler(c *fiber.Ctx) error {
+	var payload struct {
+		Node       models.Node       `json:"node"`
+		Draft      models.Draft      `json:"draft"`
+		Attachment models.Attachment `json:"attachment"`
+	}
+
+	if err := c.BodyParser(&payload); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Cannot parse JSON"})
+	}
+
+	if payload.Node.Name == "" || payload.Draft.Rubric == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid input"})
+	}
+
+	payload.Draft.ID = uuid.New()
+	payload.Draft.DtCreate = time.Now()
+
+	if err := draft.CreateDraft(payload.Node, payload.Draft, payload.Attachment); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{"message": "Draft created successfully"})
+}
+
+func deleteDraftHandler(c *fiber.Ctx) error {
+	draftID, err := uuid.Parse(c.Params("draftId"))
+	if err != nil {
+		return c.Status(400).SendString("Invalid draft UUID")
+	}
+
+	ctx := context.Background()
+	err = draft.DeleteDraftByID(ctx, draftID)
+	if err != nil {
+		return c.Status(500).SendString(err.Error())
+	}
+
+	return c.SendStatus(fiber.StatusNoContent)
 }
