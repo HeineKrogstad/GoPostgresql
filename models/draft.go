@@ -3,10 +3,12 @@ package models
 import (
 	"encoding/json"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type Draft struct {
-	ID            string          `json:"id_draft"`
+	ID            uuid.UUID       `json:"id_draft"`
 	NodeID        int             `json:"id_node"`
 	ProjectID     int             `json:"id_project"`
 	UserProfileID *int            `json:"id_user_profile"`

@@ -1,16 +1,19 @@
 package main
 
 import (
+	"GoPostgresql/pkg/attachment"
 	"GoPostgresql/pkg/database"
 	"GoPostgresql/pkg/draft"
 	"GoPostgresql/pkg/node"
 	"GoPostgresql/pkg/project"
 	"GoPostgresql/pkg/user"
+
 	"context"
 	"log"
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 )
 
 func main() {
@@ -43,26 +46,39 @@ func main() {
 
 		limitStr := c.Query("limit")
 		offsetStr := c.Query("offset")
+		rubric := c.Query("rubric")
 
 		ctx := context.Background()
 
-		if limitStr != "" && offsetStr != "" {
-			limit, err := strconv.Atoi(limitStr)
+		switch {
+		case rubric != "" && limitStr != "" && offsetStr != "":
+			// По ProjectID & Рубрике + Пагинация
+			limit, _ := strconv.Atoi(limitStr)
+			offset, _ := strconv.Atoi(offsetStr)
+			drafts, err := draft.GetDraftsByProjectAndRubricPagination(ctx, projectID, rubric, limit, offset)
 			if err != nil {
-				return c.Status(400).SendString("Invalid limit parameter")
+				return c.Status(500).SendString(err.Error())
 			}
+			return c.JSON(drafts)
 
-			offset, err := strconv.Atoi(offsetStr)
+		case rubric != "":
+			// По ProjectID & Рубрике
+			drafts, err := draft.GetDraftsByProjectAndRubric(ctx, projectID, rubric)
 			if err != nil {
-				return c.Status(400).SendString("Invalid offset parameter")
+				return c.Status(500).SendString(err.Error())
 			}
-
+			return c.JSON(drafts)
+		case limitStr != "" && offsetStr != "":
+			// По ProjectID + Пагинация
+			limit, _ := strconv.Atoi(limitStr)
+			offset, _ := strconv.Atoi(offsetStr)
 			drafts, err := draft.GetDraftsByProjectIDPagination(ctx, projectID, limit, offset)
 			if err != nil {
 				return c.Status(500).SendString(err.Error())
 			}
 			return c.JSON(drafts)
-		} else {
+		default:
+			// По ProjectID
 			drafts, err := draft.GetDraftsByProjectID(ctx, projectID)
 			if err != nil {
 				return c.Status(500).SendString(err.Error())
@@ -102,6 +118,21 @@ func main() {
 		}
 
 		return c.JSON(draft)
+	})
+
+	app.Get("/drafts/:draftId/attachments", func(c *fiber.Ctx) error {
+		draftID, err := uuid.Parse(c.Params("draftId"))
+		if err != nil {
+			return c.Status(400).SendString("Invalid draft ID")
+		}
+
+		ctx := context.Background()
+		attachments, err := attachment.GetAttachmentsByDraftID(ctx, draftID)
+		if err != nil {
+			return c.Status(500).SendString(err.Error())
+		}
+
+		return c.JSON(attachments)
 	})
 
 	log.Fatal(app.Listen(":3000"))
