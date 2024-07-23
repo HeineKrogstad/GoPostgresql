@@ -12,7 +12,6 @@ import (
 	"context"
 	"log"
 	"strconv"
-	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -146,27 +145,26 @@ func main() {
 
 func createDraftHandler(c *fiber.Ctx) error {
 	var payload struct {
-		Node       models.Node       `json:"node"`
-		Draft      models.Draft      `json:"draft"`
-		Attachment models.Attachment `json:"attachment"`
+		Node        models.Node         `json:"node"`
+		Draft       models.Draft        `json:"draft"`
+		Attachments []models.Attachment `json:"attachments"`
 	}
 
 	if err := c.BodyParser(&payload); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Cannot parse JSON"})
+		return c.Status(fiber.StatusBadRequest).SendString(err.Error())
 	}
 
-	if payload.Node.Name == "" || payload.Draft.Rubric == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid input"})
+	createdDraft, createdNode, createdAttachments, err := draft.CreateDraft(payload.Node, payload.Draft, payload.Attachments)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
 	}
 
-	payload.Draft.ID = uuid.New()
-	payload.Draft.DtCreate = time.Now()
-
-	if err := draft.CreateDraft(payload.Node, payload.Draft, payload.Attachment); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
-	}
-
-	return c.Status(fiber.StatusCreated).JSON(fiber.Map{"message": "Draft created successfully"})
+	c.Location("/draft/" + createdDraft.ID.String())
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
+		"draft":       createdDraft,
+		"node":        createdNode,
+		"attachments": createdAttachments,
+	})
 }
 
 func deleteDraftHandler(c *fiber.Ctx) error {

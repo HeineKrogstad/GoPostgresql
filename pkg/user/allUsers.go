@@ -6,7 +6,6 @@ import (
 	"context"
 )
 
-// Функция для получения всех пользователей
 func GetAllUsers(ctx context.Context) ([]models.UserProfile, error) {
 	query := "SELECT * FROM user_profile"
 	rows, err := database.Conn.Query(ctx, query)

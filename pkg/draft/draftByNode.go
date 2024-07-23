@@ -4,7 +4,6 @@ import (
 	"GoPostgresql/models"
 	"GoPostgresql/pkg/database"
 	"context"
-	"fmt"
 )
 
 func GetDraftByNodeID(ctx context.Context, nodeId int) (*models.Draft, error) {
@@ -36,7 +35,7 @@ func GetDraftByNodeID(ctx context.Context, nodeId int) (*models.Draft, error) {
 		&draft.DtCreate,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("could not get draft by node ID %d: %v", nodeId, err)
+		return nil, err
 	}
 
 	return &draft, nil
